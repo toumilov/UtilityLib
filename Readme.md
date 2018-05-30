@@ -1,0 +1,1 @@
+cmake -G "Eclipse CDT4 - MinGW Makefiles" -D_ECLIPSE_VERSION=4.5 -DC++11=ON -DTESTS=OFF ..\src\
