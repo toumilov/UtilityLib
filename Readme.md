@@ -19,7 +19,7 @@ Run the following command under **build** directory.
 Adjust CMake generator according to your build system(IDE).
 The example below is using Eclipse generator.
 ```
-cmake -G "Eclipse CDT4 - MinGW Makefiles" -D_ECLIPSE_VERSION=4.5 -DC++11=ON -DTESTS=OFF ..\src\
+cmake -G "Eclipse CDT4 - MinGW Makefiles" -D_ECLIPSE_VERSION=4.5 -DC++11=ON -DTESTS=OFF -DDEBUG=1 ..\src\
 ```
 
 ## Examples

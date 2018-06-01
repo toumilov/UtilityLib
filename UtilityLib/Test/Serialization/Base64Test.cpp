@@ -9,6 +9,12 @@ TEST_GROUP(Base64Suite)
     void teardown()
     {
     }
+
+    std::string decode_str( const std::string encoded )
+    {
+        auto bytes = UtilityLib::Serialization::Base64::decode( encoded );
+        return std::string( bytes.begin(), bytes.end() );
+    }
 };
 
 TEST(Base64Suite, Encode)
@@ -32,9 +38,10 @@ TEST(Base64Suite, Encode)
 
 TEST(Base64Suite, Decode)
 {
-    STRCMP_EQUAL( "Test string", UtilityLib::Serialization::Base64::decode( "VGVzdCBzdHJpbmc=" ).data() );
-    STRCMP_EQUAL( "NoPadding", UtilityLib::Serialization::Base64::decode( "Tm9QYWRkaW5n" ).data() );
-    STRCMP_EQUAL( "With Paddings", UtilityLib::Serialization::Base64::decode( "V2l0aCBQYWRkaW5ncw==" ).data() );
+
+    STRCMP_EQUAL( "Test string", decode_str( "VGVzdCBzdHJpbmc=" ).c_str() );
+    STRCMP_EQUAL( "NoPadding", decode_str( "Tm9QYWRkaW5n" ).c_str() );
+    STRCMP_EQUAL( "With Paddings", decode_str( "V2l0aCBQYWRkaW5ncw==" ).c_str() );
     CHECK( UtilityLib::Serialization::Base64::decode( "" ).empty() );
 }
 
