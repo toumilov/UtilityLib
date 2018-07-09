@@ -1,7 +1,7 @@
-#include <CppUTest/TestHarness.h>
+#include "CppUTest/TestHarness.h"
 #include "Serialization/Base64.hpp"
 
-TEST_GROUP(Base64Suite)
+TEST_GROUP(Base64Group)
 {
     void setup()
     {
@@ -17,7 +17,7 @@ TEST_GROUP(Base64Suite)
     }
 };
 
-TEST(Base64Suite, Encode)
+TEST(Base64Group, Encode)
 {
     std::string input( "Test string" );
     auto b64 = UtilityLib::Serialization::Base64::encode( input.c_str(), input.length() );
@@ -36,7 +36,7 @@ TEST(Base64Suite, Encode)
     STRCMP_EQUAL( b64.c_str(), "" );
 }
 
-TEST(Base64Suite, Decode)
+TEST(Base64Group, Decode)
 {
 
     STRCMP_EQUAL( "Test string", decode_str( "VGVzdCBzdHJpbmc=" ).c_str() );
@@ -45,7 +45,7 @@ TEST(Base64Suite, Decode)
     CHECK( UtilityLib::Serialization::Base64::decode( "" ).empty() );
 }
 
-TEST(Base64Suite, Combined)
+TEST(Base64Group, Combined)
 {
     std::string input = R"(Hello
         World)";
@@ -53,7 +53,7 @@ TEST(Base64Suite, Combined)
     CHECK( input == UtilityLib::Serialization::Base64::decode( b64 ).data() );
 }
 
-TEST(Base64Suite, Validate)
+TEST(Base64Group, Validate)
 {
     CHECK( UtilityLib::Serialization::Base64::validate( "VGVzdCBzdHJpbmc=" ) );
     CHECK( UtilityLib::Serialization::Base64::validate( "ABC=" ) );

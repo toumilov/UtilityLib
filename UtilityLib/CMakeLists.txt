@@ -6,6 +6,7 @@ SET( CMAKE_CXX_FLAGS  "-Wall -Werror -std=c++11" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "" )
 
 set(sources
+    Inc/Containers/Variant.hpp
     Inc/Serialization/Base64.hpp
     Src/Serialization/Base64.cpp
     Inc/Error.hpp

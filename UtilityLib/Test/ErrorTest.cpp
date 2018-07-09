@@ -20,7 +20,7 @@ const char* error_module( const TestError::ErrorCode& )
     return "TestModule";
 };
 
-TEST_GROUP(ErrorSuite)
+TEST_GROUP(ErrorGroup)
 {
     void setup()
     {
@@ -30,7 +30,7 @@ TEST_GROUP(ErrorSuite)
     }
 };
 
-TEST(ErrorSuite, BasicTest)
+TEST(ErrorGroup, BasicTest)
 {
     Error e;
     CHECK( e.empty() );
@@ -48,7 +48,7 @@ TEST(ErrorSuite, BasicTest)
     STRCMP_EQUAL( "TestError", e.description().c_str() );
 }
 
-TEST(ErrorSuite, CustomErrorTest)
+TEST(ErrorGroup, CustomErrorTest)
 {
     Error e;
     e = TestError::Overflow;
