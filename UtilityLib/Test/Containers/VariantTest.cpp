@@ -1,4 +1,5 @@
 
+#include <string>
 #include "Containers/Variant.hpp"
 #include "CppUTest/TestHarness.h"
 
@@ -79,17 +80,17 @@ TEST(VariantGroup, MoveTest)
     CHECK_EQUAL( 5, *v4.get<int>() );
 }
 
-TEST(VariantGroup, VisitorTest)
+TEST(VariantGroup, ConstVisitorTest)
 {
     struct Visitor
     {
         unsigned i = 0;
         void operator()() { i = 1; }
-        void operator()( int ) { i = 2; }
-        void operator()( bool ) { i = 3; }
-        void operator()( char ) { i = 4; }
+        void operator()( const int& ) { i = 2; }
+        void operator()( const bool& ) { i = 3; }
+        void operator()( const std::string& ) { i = 4; }
     } visitor;
-    Containers::Variant<int, bool, char> v;
+    Containers::Variant<int, bool, std::string> v;
 
     v.accept( visitor );
     CHECK_EQUAL( 1, visitor.i );
@@ -102,7 +103,7 @@ TEST(VariantGroup, VisitorTest)
     v.accept( visitor );
     CHECK_EQUAL( 3, visitor.i );
 
-    v = 'a';
+    v = std::string( "test" );
     v.accept( visitor );
     CHECK_EQUAL( 4, visitor.i );
 }

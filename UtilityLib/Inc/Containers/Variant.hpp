@@ -34,11 +34,9 @@ struct Max<T, val1, val2, values...>
 template <typename ...Ts>
 struct TypeIndex;
 
-// found it
 template <typename T, typename ...Ts>
 struct TypeIndex<T, T, Ts...> : std::integral_constant<unsigned, 1>{};
 
-// still looking
 template <typename T1, typename T2, typename ...Ts>
 struct TypeIndex<T1, T2, Ts...> : std::integral_constant<unsigned, 1 + TypeIndex<T1, Ts...>::value>{};
 
@@ -89,14 +87,17 @@ public:
         return *this;
     }
 
-    template <class T> const
-    T* get() const
+    template <class T>
+    T* get()
     {
-        auto ti = TypeIndex<T, Types...>::value;
-        if ( type_ != ti )
-        {
-            return nullptr;
-        }
+        if ( type_ != TypeIndex<T, Types...>::value ) { return nullptr; }
+        return reinterpret_cast<T*>( &data_ );
+    }
+
+    template <class T>
+    const T* get() const
+    {
+        if ( type_ != TypeIndex<T, Types...>::value ) { return nullptr; }
         return reinterpret_cast<const T*>( &data_ );
     }
 
@@ -120,6 +121,12 @@ public:
         Dispatcher<Visitor, Types...>::dispatch( *this, v );
     }
 
+    template <typename T, class Visitor>
+    void accept( const T *value, Visitor &v ) const
+    {
+        v.operator()( value );
+    }
+
 private:
     template <typename Visitor, typename ...Ts>
     struct Dispatcher;
@@ -141,7 +148,7 @@ private:
             const T *value = v.get<T>();
             if ( value )
             {
-                visitor( *value );
+                visitor.operator()( *value );
             }
             else
             {

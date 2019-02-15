@@ -7,6 +7,7 @@ SET( CMAKE_CXX_FLAGS  "-std=c++11" )
 
 set(sources Main.cpp
     Containers/VariantTest.cpp
+    Containers/ValueTest.cpp
     Serialization/Base64Test.cpp
     ErrorTest.cpp
 )
@@ -20,6 +21,7 @@ enable_testing()
 add_test(NAME Base64Group COMMAND ${UNIT_TEST} -g Base64Group)
 add_test(NAME ErrorGroup COMMAND ${UNIT_TEST} -g ErrorGroup)
 add_test(NAME VariantGroup COMMAND ${UNIT_TEST} -g VariantGroup)
+add_test(NAME ValueGroup COMMAND ${UNIT_TEST} -g ValueGroup)
 
 #add_custom_command(
 #    TARGET ${UNIT_TEST}
