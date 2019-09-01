@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 # Set compiler flags
-SET( CMAKE_CXX_FLAGS  "-Wall -Werror -std=c++11" )
+SET( CMAKE_CXX_FLAGS  "-O3 -Wall -Werror -std=c++11" )
 # Set linker flags
 #SET( CMAKE_EXE_LINKER_FLAGS  "" )
 
@@ -11,6 +11,8 @@ set(sources
     Src/Containers/Value.cpp
     Inc/Serialization/Base64.hpp
     Src/Serialization/Base64.cpp
+    Inc/Serialization/Json.hpp
+    Src/Serialization/Json.cpp
     Inc/Error.hpp
     Src/Error.cpp
 )

@@ -62,4 +62,10 @@ TEST(ErrorGroup, CustomErrorTest)
     CHECK( !e.empty() );
     STRCMP_EQUAL( "TestModule", e.module().c_str() );
     STRCMP_EQUAL( "blablabla", e.description().c_str() );
+
+    e = Error( TestError::Overflow, "test" );
+    CHECK( !e.empty() );
+    CHECK( e.code() == TestError::Overflow );
+    STRCMP_EQUAL( "TestModule", e.module().c_str() );
+    STRCMP_EQUAL( "test", e.description().c_str() );
 }
