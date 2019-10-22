@@ -249,6 +249,22 @@ Value::Type Value::type() const
     return visitor.t;
 }
 
+bool Value::has( unsigned index ) const
+{
+    return type_ == Type::Array && index < get<Value::Array>().size();
+}
+
+bool Value::has( const std::string &key ) const
+{
+    auto o = get<Value::Object>();
+    return type_ == Type::Object && o.find( key ) != o.end();
+}
+
+void Value::accept( ValueVisitor *visitor ) const
+{
+    data_.accept( *visitor );
+}
+
 bool Value::is_none() const
 {
     return is( Type::None );
@@ -319,7 +335,7 @@ Value Value::as( Type t ) const
         case Value::Type::Uint64: break;
         case Value::Type::Float:  break;
         case Value::Type::Double: break;
-        case Value::Type::String: v = "None"; break;
+        case Value::Type::String: v = "null"; break;
         case Value::Type::Array:  break;
         case Value::Type::Object: break;
         }
@@ -459,7 +475,7 @@ Value Value::as( Type t ) const
             case Value::Type::String:
             {
                 char buf[50];
-                snprintf( buf, sizeof( buf ), "%f", *data_.get<Float>() );
+                snprintf( buf, sizeof( buf ), "%g", *data_.get<Float>() );
                 v = buf;
                 break;
             }
@@ -484,7 +500,7 @@ Value Value::as( Type t ) const
             case Value::Type::String:
             {
                 char buf[320];
-                snprintf( buf, sizeof( buf ), "%f", *data_.get<Double>() );
+                snprintf( buf, sizeof( buf ), "%g", *data_.get<Double>() );
                 v = buf;
                 break;
             }
@@ -547,11 +563,70 @@ Value Value::as( Type t ) const
         }
         break;
     case Value::Type::Array:
+        if ( t == Value::Type::Array )
+        {
+            v = get<Array>();
+        }
+        break;
     case Value::Type::Object:
+        if ( t == Value::Type::Object )
+        {
+            v = get<Object>();
+        }
         break;
     }
 
     return v;
+}
+
+Value::Int32 Value::as_int32() const
+{
+    return as( Value::Type::Int32 ).get<Value::Int32>();
+}
+
+Value::Int64 Value::as_int64() const
+{
+    return as( Value::Type::Int64 ).get<Value::Int64>();
+}
+
+Value::Uint32 Value::as_uint32() const
+{
+    return as( Value::Type::Uint32 ).get<Value::Uint32>();
+}
+
+Value::Uint64 Value::as_uint64() const
+{
+    return as( Value::Type::Uint64 ).get<Value::Uint64>();
+}
+
+Value::Float Value::as_float() const
+{
+    return as( Value::Type::Float ).get<Value::Float>();
+}
+
+Value::Double Value::as_double() const
+{
+    return as( Value::Type::Double ).get<Value::Double>();
+}
+
+Value::Bool Value::as_bool() const
+{
+    return as( Value::Type::Bool ).get<Value::Bool>();
+}
+
+Value::String Value::as_string() const
+{
+    return as( Value::Type::String ).get<Value::String>();
+}
+
+Value::Array Value::as_array() const
+{
+    return as( Value::Type::Array ).get<Value::Array>();
+}
+
+Value::Object Value::as_object() const
+{
+    return as( Value::Type::Object ).get<Value::Object>();
 }
 
 bool Value::is_convertable( const Value::Type t ) const

@@ -253,6 +253,9 @@ TEST(ValueGroup, ArrayTest)
     // Getting contents
     v.insert( 123 )
      .insert( "test" );
+    CHECK( v.has( 0 ) );
+    CHECK( v.has( 1 ) );
+    CHECK_FALSE( v.has( 2 ) );
     CHECK( 123 == v[0] );
     CHECK( "test" == v.at( 1 ) );
     CHECK( v.at( 2 ).empty() );
@@ -285,6 +288,9 @@ TEST(ValueGroup, ObjectTest)
     // Getting contents
     v.insert( "key1", 123 )
      .insert( "key2", "test" );
+    CHECK( v.has( "key1" ) );
+    CHECK( v.has( "key2" ) );
+    CHECK_FALSE( v.has( "key3" ) );
     CHECK( 123 == v["key1"] );
     CHECK( "test" == v.at( "key2" ) );
     CHECK( v.at( "key3" ).empty() );
@@ -672,24 +678,34 @@ TEST(ValueGroup, AsType)
     CHECK( none_value.as( Value::Type::None ).is( Value::Type::None ) );
     // None -> Bool
     CHECK( none_value.as( Value::Type::Bool ).is( Value::Type::Bool ) );
+    CHECK_EQUAL( Value::default_value<Value::Bool>(), none_value.as_bool() );
     // None -> Int32
     CHECK( none_value.as( Value::Type::Int32 ).is( Value::Type::Int32 ) );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), none_value.as_int32() );
     // None -> Int64
     CHECK( none_value.as( Value::Type::Int64 ).is( Value::Type::Int64 ) );
+    CHECK_EQUAL( Value::default_value<Value::Int64>(), none_value.as_int64() );
     // None -> Uint32
     CHECK( none_value.as( Value::Type::Uint32 ).is( Value::Type::Uint32 ) );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), none_value.as_uint32() );
     // None -> Uint64
     CHECK( none_value.as( Value::Type::Uint64 ).is( Value::Type::Uint64 ) );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), none_value.as_uint64() );
     // None -> Float
     CHECK( none_value.as( Value::Type::Float ).is( Value::Type::Float ) );
+    CHECK_EQUAL( Value::default_value<Value::Float>(), none_value.as_float() );
     // None -> Double
     CHECK( none_value.as( Value::Type::Double ).is( Value::Type::Double ) );
+    CHECK_EQUAL( Value::default_value<Value::Double>(), none_value.as_double() );
     // None -> String
     CHECK( none_value.as( Value::Type::String ).is( Value::Type::String ) );
+    STRCMP_EQUAL( "null", none_value.as_string().c_str() );
     // None -> Array
     CHECK( none_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( none_value.as_array().empty() );
     // None -> Object
     CHECK( none_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( none_value.as_object().empty() );
 
     ///////////
     // Bool
@@ -700,38 +716,48 @@ TEST(ValueGroup, AsType)
     auto b = bool_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, bool_value.as_bool() );
     // Bool -> Int32
     auto i32 = bool_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( 1, i32.get<Value::Int32>() );
+    CHECK_EQUAL( 1, bool_value.as_int32() );
     // Bool -> Int64
     auto i64 = bool_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( 1, i64.get<Value::Int64>() );
+    CHECK_EQUAL( 1, bool_value.as_int64() );
     // Bool -> Uint32
     auto u32 = bool_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( 1, u32.get<Value::Uint32>() );
+    CHECK_EQUAL( 1, bool_value.as_uint32() );
     // Bool -> Uint64
     auto u64 = bool_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( 1, u64.get<Value::Uint64>() );
+    CHECK_EQUAL( 1, bool_value.as_uint64() );
     // Bool -> Float
     auto f = bool_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 1.0, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    CHECK_EQUAL( 1.0, bool_value.as_float() );
     // Bool -> Double
     auto d = bool_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 1.0, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    CHECK_EQUAL( 1.0, bool_value.as_double() );
     // Bool -> String
     auto s = bool_value.as( Value::Type::String );
     CHECK( s.is( Value::Type::String ) );
     STRCMP_EQUAL( "true", s.get<Value::String>().c_str() );
+    CHECK_EQUAL( "true", bool_value.as_string() );
     // Bool -> Array
     CHECK( bool_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( bool_value.as_array().empty() );
     // Bool -> Object
     CHECK( bool_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( bool_value.as_object().empty() );
 
     ///////////
     // Int32
@@ -742,47 +768,59 @@ TEST(ValueGroup, AsType)
     b = i32_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, i32_value.as_bool() );
     // Int32 -> Int32
     i32 = i32_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( 123, i32.get<Value::Int32>() );
+    CHECK_EQUAL( 123, i32_value.as_int32() );
     // Int32 -> Int64
     i64 = i32_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( 123, i64.get<Value::Int64>() );
+    CHECK_EQUAL( 123, i32_value.as_int64() );
     // Int32 -> Uint32
     i32_value = -1;
     u32 = i32_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint32>(), u32.get<Value::Uint32>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), i32_value.as_uint32() );
     i32_value = 123;
     u32 = i32_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( 123, u32.get<Value::Uint32>() );
+    CHECK_EQUAL( 123, i32_value.as_int32() );
     // Int32 -> Uint64
     i32_value = -1;
     u64 = i32_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint64>(), u64.get<Value::Uint64>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), i32_value.as_uint64() );
     i32_value = 123;
     u64 = i32_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( 123, u64.get<Value::Uint64>() );
+    CHECK_EQUAL( 123, i32_value.as_uint64() );
     // Int32 -> Float
     f = i32_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 123.0, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( 123.0, i32_value.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // Int32 -> Double
     d = i32_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 123.0, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 123.0, i32_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // Int32 -> String
     s = i32_value.as( Value::Type::String );
     STRCMP_EQUAL( "123", s.get<Value::String>().c_str() );
+    STRCMP_EQUAL( "123", i32_value.as_string().c_str() );
     // Int32 -> Array
     CHECK( i32_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( i32_value.as_array().empty() );
     // Int32 -> Object
     CHECK( i32_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( i32_value.as_object().empty() );
 
     ///////////
     // Int64
@@ -793,52 +831,65 @@ TEST(ValueGroup, AsType)
     b = i64_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, i64_value.as_bool() );
     // Int64 -> Int32
     i64_value = (Value::Int64)std::numeric_limits<Value::Int32>::max() + 1;
     i32 = i64_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( Value::default_value<Value::Int32>(), i32.get<Value::Int32>() );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), i64_value.as_int32() );
     i64_value = (Value::Int64)123;
     i32 = i64_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( 123, i32.get<Value::Int32>() );
+    CHECK_EQUAL( 123, i32.as_int32() );
     // Int64 -> Int64
     i64 = i64_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( 123, i64.get<Value::Int64>() );
-    // Int64 -> Uint64
+    CHECK_EQUAL( 123, i64_value.as_int64() );
+    // Int64 -> Uint32
     i64_value = (Value::Int64)-1;
     u32 = i64_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint32>(), u32.get<Value::Uint32>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), i64_value.as_uint32() );
     i64_value = (Value::Int64)123;
     u32 = i64_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( 123, u32.get<Value::Uint32>() );
+    CHECK_EQUAL( 123, i64_value.as_uint32() );
     // Int64 -> Uint64
     i64_value = (Value::Int64)-1;
     u64 = i64_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint64>(), u64.get<Value::Uint64>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), i64_value.as_uint64() );
     i64_value = (Value::Int64)123;
     u64 = i64_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( 123, u64.get<Value::Uint64>() );
+    CHECK_EQUAL( 123, i64_value.as_uint64() );
     // Int64 -> Float
     f = i64_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 123.0, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( 123.0, i64_value.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // Int64 -> Double
     d = i64_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 123.0, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 123.0, i64_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // Int64 -> String
     s = i64_value.as( Value::Type::String );
     STRCMP_EQUAL( "123", s.get<Value::String>().c_str() );
+    STRCMP_EQUAL( "123", i64_value.as_string().c_str() );
     // Int64 -> Array
     CHECK( i64_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( i64_value.as_array().empty() );
     // Int64 -> Object
     CHECK( i64_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( i64_value.as_object().empty() );
 
     ///////////
     // Uint32
@@ -849,42 +900,53 @@ TEST(ValueGroup, AsType)
     b = u32_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, u32_value.as_bool() );
     // Uint32 -> Int32
     u32_value = Value( (Value::Uint32)std::numeric_limits<Value::Int32>::max() + 1 );
     i32 = u32_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( Value::default_value<Value::Int32>(), i32.get<Value::Int32>() );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), u32_value.as_int32() );
     u32_value = Value( (Value::Uint32)123 );
     i32 = u32_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( 123, i32.get<Value::Int32>() );
+    CHECK_EQUAL( 123, u32_value.as_int32() );
     // Uint32 -> Int64
     i64 = u32_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( 123, i64.get<Value::Int64>() );
+    CHECK_EQUAL( 123, u32_value.as_int64() );
     // Uint32 -> Uint32
     u32 = u32_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( 123, u32.get<Value::Uint32>() );
+    CHECK_EQUAL( 123, u32_value.as_uint32() );
     // Uint32 -> Uint64
     u64 = u32_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( 123, u64.get<Value::Uint64>() );
+    CHECK_EQUAL( 123, u32_value.as_uint64() );
     // Uint32 -> Float
     f = u32_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 123.0, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( 123.0, u32_value.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // Uint32 -> Double
     d = u32_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 123.0, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 123.0, u32_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // Uint32 -> String
     s = u32_value.as( Value::Type::String );
     STRCMP_EQUAL( "123", s.get<Value::String>().c_str() );
+    STRCMP_EQUAL( "123", u32_value.as_string().c_str() );
     // Uint32 -> Array
     CHECK( u32_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( u32_value.as_array().empty() );
     // Uint32 -> Object
     CHECK( u32_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( u32_value.as_object().empty() );
 
     ///////////
     // Uint64
@@ -895,52 +957,65 @@ TEST(ValueGroup, AsType)
     b = u64_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, u64_value.as_bool() );
     // Uint64 -> Int32
     u64_value = Value( (Value::Uint64)-1 );
     i32 = u64_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( Value::default_value<Value::Int32>(), i32.get<Value::Int32>() );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), u64_value.as_int32() );
     u64_value = Value( (Value::Uint64)123 );
     i32 = u64_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( 123, i32.get<Value::Int32>() );
+    CHECK_EQUAL( 123, u64_value.as_int32() );
     // Uint64 -> Int64
     u64_value = Value( (Value::Uint64)-1 );
     i64 = u64_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( Value::default_value<Value::Int64>(), i64.get<Value::Int64>() );
+    CHECK_EQUAL( Value::default_value<Value::Int64>(), u64_value.as_int64() );
     u64_value = Value( (Value::Uint64)123 );
     i64 = u64_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( 123, i64.get<Value::Int64>() );
+    CHECK_EQUAL( 123, u64_value.as_int64() );
     // Uint64 -> Uint32
     u64_value = Value( (Value::Uint64)std::numeric_limits<Value::Uint32>::max() + 1 );
     u32 = u64_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint32>(), u32.get<Value::Uint32>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), u64_value.as_uint32() );
     u64_value = Value( (Value::Uint64)123 );
     u32 = u64_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( 123, u32.get<Value::Uint32>() );
+    CHECK_EQUAL( 123, u64_value.as_uint32() );
     // Uint64 -> Uint64
     u64 = u64_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( 123, u64.get<Value::Uint64>() );
+    CHECK_EQUAL( 123, u64_value.as_uint64() );
     // Uint64 -> Float
     f = u64_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 123.0, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( 123.0, u64.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // Uint64 -> Double
     d = u64_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 123.0, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 123.0, u64_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // Uint64 -> String
     s = u64_value.as( Value::Type::String );
     STRCMP_EQUAL( "123", s.get<Value::String>().c_str() );
+    STRCMP_EQUAL( "123", u64_value.as_string().c_str() );
     // Uint64 -> Array
     CHECK( u64_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( u64_value.as_array().empty() );
     // Uint64 -> Object
     CHECK( u64_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( u64_value.as_object().empty() );
 
     ///////////
     // Float
@@ -951,37 +1026,47 @@ TEST(ValueGroup, AsType)
     b = float_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, float_value.as_bool() );
     // Float -> Int32
     i32 = float_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( Value::default_value<Value::Int32>(), i32.get<Value::Int32>() );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), float_value.as_int32() );
     // Float -> Int64
     i64 = float_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( Value::default_value<Value::Int64>(), i64.get<Value::Int64>() );
+    CHECK_EQUAL( Value::default_value<Value::Int64>(), float_value.as_int64() );
     // Float -> Uint32
     u32 = float_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint32>(), u32.get<Value::Uint32>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), float_value.as_uint32() );
     // Float -> Uint64
     u64 = float_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint64>(), u64.get<Value::Uint64>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), float_value.as_uint64() );
     // Float -> Float
     f = float_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 12.3f, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( 12.3f, float_value.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // Float -> Double
     d = float_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 12.3f, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 12.3f, float_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // Float -> String
     s = float_value.as( Value::Type::String );
     STRCMP_CONTAINS( "12.3", s.get<Value::String>().c_str() );
+    STRCMP_CONTAINS( "12.3", float_value.as_string().c_str() );
     // Float -> Array
     CHECK( float_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( float_value.as_array().empty() );
     // Float -> Object
     CHECK( float_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( float_value.as_object().empty() );
 
     ///////////
     // Double
@@ -992,37 +1077,47 @@ TEST(ValueGroup, AsType)
     b = double_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, double_value.as_bool() );
     // Double -> Int32
     i32 = double_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( Value::default_value<Value::Int32>(), i32.get<Value::Int32>() );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), double_value.as_int32() );
     // Double -> Int64
     i64 = double_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( Value::default_value<Value::Int64>(), i64.get<Value::Int64>() );
+    CHECK_EQUAL( Value::default_value<Value::Int64>(), double_value.as_int64() );
     // Double -> Uint32
     u32 = double_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint32>(), u32.get<Value::Uint32>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), double_value.as_uint32() );
     // Double -> Uint64
     u64 = double_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( Value::default_value<Value::Uint64>(), u64.get<Value::Uint64>() );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), double_value.as_uint64() );
     // Double -> Float
     f = double_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( Value::default_value<Value::Float>(), f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( Value::default_value<Value::Float>(), double_value.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // Double -> Double
     d = double_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 12.3, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 12.3, double_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // Double -> String
     s = double_value.as( Value::Type::String );
     STRCMP_CONTAINS( "12.3", s.get<Value::String>().c_str() );
+    STRCMP_CONTAINS( "12.3", double_value.as_string().c_str() );
     // Double -> Array
     CHECK( double_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( double_value.as_array().empty() );
     // Double -> Object
     CHECK( double_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( double_value.as_object().empty() );
 
     ///////////
     // String
@@ -1034,43 +1129,126 @@ TEST(ValueGroup, AsType)
     b = str_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( false, b.get<Value::Bool>() );
+    CHECK_EQUAL( false, str_value.as_bool() );
     str_value = Value( "true" );
     b = str_value.as( Value::Type::Bool );
     CHECK( b.is( Value::Type::Bool ) );
     CHECK_EQUAL( true, b.get<Value::Bool>() );
+    CHECK_EQUAL( true, str_value.as_bool() );
     // String -> Int32
     str_value = Value( "-123" );
     i32 = str_value.as( Value::Type::Int32 );
     CHECK( i32.is( Value::Type::Int32 ) );
     CHECK_EQUAL( -123, i32.get<Value::Int32>() );
+    CHECK_EQUAL( -123, str_value.as_int32() );
     // String -> Int64
     i64 = str_value.as( Value::Type::Int64 );
     CHECK( i64.is( Value::Type::Int64 ) );
     CHECK_EQUAL( -123, i64.get<Value::Int64>() );
+    CHECK_EQUAL( -123, str_value.as_int64() );
     // String -> Uint32
     str_value = Value( "123" );
     u32 = str_value.as( Value::Type::Uint32 );
     CHECK( u32.is( Value::Type::Uint32 ) );
     CHECK_EQUAL( 123, u32.get<Value::Uint32>() );
+    CHECK_EQUAL( 123, str_value.as_uint32() );
     // String -> Uint64
     u64 = str_value.as( Value::Type::Uint64 );
     CHECK( u64.is( Value::Type::Uint64 ) );
     CHECK_EQUAL( 123, u64.get<Value::Uint64>() );
+    CHECK_EQUAL( 123, str_value.as_uint64() );
     // String -> Float
     str_value = Value( "12.3" );
     f = str_value.as( Value::Type::Float );
     CHECK( f.is( Value::Type::Float ) );
     DOUBLES_EQUAL( 12.3f, f.get<Value::Float>(), std::numeric_limits<Value::Float>::epsilon() );
+    DOUBLES_EQUAL( 12.3f, str_value.as_float(), std::numeric_limits<Value::Float>::epsilon() );
     // String -> Double
     d = str_value.as( Value::Type::Double );
     CHECK( d.is( Value::Type::Double ) );
     DOUBLES_EQUAL( 12.3, d.get<Value::Double>(), std::numeric_limits<Value::Double>::epsilon() );
+    DOUBLES_EQUAL( 12.3, str_value.as_double(), std::numeric_limits<Value::Double>::epsilon() );
     // String -> String
     str_value = Value( "test" );
     s = str_value.as( Value::Type::String );
     STRCMP_EQUAL( "test", s.get<Value::String>().c_str() );
+    STRCMP_EQUAL( "test", str_value.as_string().c_str() );
     // String -> Array
     CHECK( str_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( str_value.as_array().empty() );
     // String -> Object
     CHECK( str_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( str_value.as_object().empty() );
+
+    ///////////
+    // Array
+    auto arr_value = Value( Value::Type::Array );
+    // Array -> None
+    CHECK( arr_value.as( Value::Type::None ).is( Value::Type::None ) );
+    // Array -> Bool
+    CHECK( arr_value.as( Value::Type::Bool ).is( Value::Type::Bool ) );
+    CHECK_EQUAL( Value::default_value<Value::Bool>(), arr_value.as_bool() );
+    // Array -> Int32
+    CHECK( arr_value.as( Value::Type::Int32 ).is( Value::Type::Int32 ) );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), arr_value.as_int32() );
+    // Array -> Int64
+    CHECK( arr_value.as( Value::Type::Int64 ).is( Value::Type::Int64 ) );
+    CHECK_EQUAL( Value::default_value<Value::Int64>(), arr_value.as_int64() );
+    // Array -> Uint32
+    CHECK( arr_value.as( Value::Type::Uint32 ).is( Value::Type::Uint32 ) );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), arr_value.as_uint32() );
+    // Array -> Uint64
+    CHECK( arr_value.as( Value::Type::Uint64 ).is( Value::Type::Uint64 ) );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), arr_value.as_uint64() );
+    // Array -> Float
+    CHECK( arr_value.as( Value::Type::Float ).is( Value::Type::Float ) );
+    CHECK_EQUAL( Value::default_value<Value::Float>(), arr_value.as_float() );
+    // Array -> Double
+    CHECK( arr_value.as( Value::Type::Double ).is( Value::Type::Double ) );
+    CHECK_EQUAL( Value::default_value<Value::Double>(), arr_value.as_double() );
+    // Array -> String
+    CHECK( arr_value.as( Value::Type::String ).is( Value::Type::String ) );
+    STRCMP_EQUAL( Value::default_value<Value::String>().c_str(), arr_value.as_string().c_str() );
+    // Array -> Array
+    CHECK( arr_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( arr_value.as_array().empty() );
+    // Array -> Object
+    CHECK( arr_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( arr_value.as_object().empty() );
+
+    ///////////
+    // Object
+    auto obj_value = Value( Value::Type::Object );
+    // Object -> None
+    CHECK( obj_value.as( Value::Type::None ).is( Value::Type::None ) );
+    // Object -> Bool
+    CHECK( obj_value.as( Value::Type::Bool ).is( Value::Type::Bool ) );
+    CHECK_EQUAL( Value::default_value<Value::Bool>(), obj_value.as_bool() );
+    // Object -> Int32
+    CHECK( obj_value.as( Value::Type::Int32 ).is( Value::Type::Int32 ) );
+    CHECK_EQUAL( Value::default_value<Value::Int32>(), obj_value.as_int32() );
+    // Object -> Int64
+    CHECK( obj_value.as( Value::Type::Int64 ).is( Value::Type::Int64 ) );
+    CHECK_EQUAL( Value::default_value<Value::Int64>(), obj_value.as_int64() );
+    // Object -> Uint32
+    CHECK( obj_value.as( Value::Type::Uint32 ).is( Value::Type::Uint32 ) );
+    CHECK_EQUAL( Value::default_value<Value::Uint32>(), obj_value.as_uint32() );
+    // Object -> Uint64
+    CHECK( obj_value.as( Value::Type::Uint64 ).is( Value::Type::Uint64 ) );
+    CHECK_EQUAL( Value::default_value<Value::Uint64>(), obj_value.as_uint64() );
+    // Object -> Float
+    CHECK( obj_value.as( Value::Type::Float ).is( Value::Type::Float ) );
+    CHECK_EQUAL( Value::default_value<Value::Float>(), obj_value.as_float() );
+    // Object -> Double
+    CHECK( obj_value.as( Value::Type::Double ).is( Value::Type::Double ) );
+    CHECK_EQUAL( Value::default_value<Value::Double>(), obj_value.as_double() );
+    // Object -> String
+    CHECK( obj_value.as( Value::Type::String ).is( Value::Type::String ) );
+    STRCMP_EQUAL( Value::default_value<Value::String>().c_str(), obj_value.as_string().c_str() );
+    // Object -> Array
+    CHECK( obj_value.as( Value::Type::Array ).is( Value::Type::Array ) );
+    CHECK( obj_value.as_array().empty() );
+    // Object -> Object
+    CHECK( obj_value.as( Value::Type::Object ).is( Value::Type::Object ) );
+    CHECK( obj_value.as_object().empty() );
 }

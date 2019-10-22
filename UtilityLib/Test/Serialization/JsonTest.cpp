@@ -2,6 +2,7 @@
 #include "CppUTest/TestHarness.h"
 
 using namespace UtilityLib::Serialization;
+using namespace UtilityLib::Containers;
 
 TEST_GROUP(JsonValidationGroup)
 {
@@ -222,6 +223,86 @@ TEST(JsonValidationGroup, CombinedTest)
     CHECK( e.empty() );
 }
 
+TEST(JsonValidationGroup, ParseCombinedTest)
+{
+    std::string str = R"_({
+    "string": "test",
+    "number": 123,
+    "object": {
+        "key": "value",
+        "bool": true,
+        "undef": null
+    },
+    "array": [
+        0.1,
+        false,
+        "text"
+    ],
+    "double": 1.5
+})_";
+    auto v = Json::parse( str, e );
+    CHECK( e.empty() );
+
+    STRCMP_EQUAL( "test", v["string"].as_string().c_str() );
+    CHECK_EQUAL( 123, v["number"].as_uint32() );
+    STRCMP_EQUAL( "value", v["object"]["key"].as_string().c_str() );
+    CHECK( v["object"]["bool"].as_bool() );
+    CHECK( v["object"]["undef"].is_none() );
+    CHECK_EQUAL( 3, v["array"].size() );
+    DOUBLES_EQUAL( 0.1, v["array"][0].as_float(), std::numeric_limits<float>::epsilon() );
+    CHECK_FALSE( v["array"][1].as_bool() );
+    STRCMP_EQUAL( "text", v["array"][2].as_string().c_str() );
+    DOUBLES_EQUAL( 1.5, v["double"].as_double(), std::numeric_limits<double>::epsilon() );
+
+    STRCMP_EQUAL( "null", v["bad_key"].as_string().c_str() );
+}
+
+TEST(JsonValidationGroup, ParseLexemeTest)
+{
+    auto v = Json::parse( "true", e );
+    CHECK( e.empty() );
+    CHECK( v.as_bool() );
+
+    v = Json::parse( "false", e );
+    CHECK( e.empty() );
+    CHECK_FALSE( v.as_bool() );
+
+    v = Json::parse( "null", e );
+    CHECK( e.empty() );
+    CHECK( v.empty() );
+    CHECK( v.is_none() );
+}
+
+TEST(JsonValidationGroup, ParseEmptyTest)
+{
+    auto v = Json::parse( "", e );
+    CHECK( e.empty() );
+    CHECK( v.empty() );
+    CHECK( v.is_none() );
+}
+
+TEST(JsonValidationGroup, ParseNumberTest)
+{
+    auto v = Json::parse( "0", e );
+    CHECK( e.empty() );
+    CHECK_EQUAL( 0, v.as_int32() );
+
+    v = Json::parse( "0.5", e );
+    CHECK( e.empty() );
+    DOUBLES_EQUAL( 0.5, v.as_float(), std::numeric_limits<float>::epsilon() );
+
+    v = Json::parse( "-1.2", e );
+    CHECK( e.empty() );
+    DOUBLES_EQUAL( -1.2, v.as_double(), std::numeric_limits<float>::epsilon() ); // We have float epsilon in this context
+}
+
+TEST(JsonValidationGroup, ParseStringTest)
+{
+    auto v = Json::parse( "\"str\"", e );
+    CHECK( e.empty() );
+    STRCMP_EQUAL( "str", v.as_string().c_str() );
+}
+
 TEST(JsonValidationGroup, InvalidInputTest)
 {
     std::string scenarios[] = { "123 {}", "123{}", "123 true", "true {}", "tru", "{", "}", "[", "]" };
@@ -231,4 +312,69 @@ TEST(JsonValidationGroup, InvalidInputTest)
         CHECK( !e.empty() );
         e.clear();
     }
+}
+
+TEST(JsonValidationGroup, ToStringTest)
+{
+    Value v( Value::Type::Object );
+    v.insert( "string", "test" )
+     .insert( "number", 123 )
+     .insert( "object", Value( Value::Type::Object ) )
+     .insert( "array", Value( Value::Type::Array ) )
+     .insert( "float", 1.5 )
+     .insert( "double", std::numeric_limits<double>::max() );
+
+    v["object"].insert( "key", "value" )
+               .insert( "bool", true )
+               .insert( "undef", Value( Value::Type::None ) );
+    v["array"].insert( 123 )
+              .insert( false )
+              .insert( "test" );
+
+    auto s = Json::build( v, e );
+    STRCMP_CONTAINS( "{\"array\":[", s.c_str() );
+    STRCMP_CONTAINS( "]", s.c_str() );
+    STRCMP_CONTAINS( "\"float\":1.5", s.c_str() );
+    STRCMP_CONTAINS( "\"double\":1.79769e+308", s.c_str() );
+    STRCMP_CONTAINS( "\"number\":123", s.c_str() );
+    STRCMP_CONTAINS( "\"object\":{", s.c_str() );
+    STRCMP_CONTAINS( "\"bool\":true", s.c_str() );
+    STRCMP_CONTAINS( "\"key\":\"value\"", s.c_str() );
+    STRCMP_CONTAINS( "\"undef\":null", s.c_str() );
+    STRCMP_CONTAINS( "\"string\":\"test\"", s.c_str() );
+
+    s = Json::build( v, e, Json::Format( ' ', 4 ) );
+    STRCMP_CONTAINS( "    \"array\": [", s.c_str() );
+    STRCMP_CONTAINS( "        123", s.c_str() );
+    STRCMP_CONTAINS( "        false", s.c_str() );
+    STRCMP_CONTAINS( "        \"test\"", s.c_str() );
+    STRCMP_CONTAINS( "    ],", s.c_str() );
+    STRCMP_CONTAINS( "    \"float\": 1.5", s.c_str() );
+    STRCMP_CONTAINS( "    \"double\": 1.79769e+308", s.c_str() );
+    STRCMP_CONTAINS( "    \"number\": 123", s.c_str() );
+    STRCMP_CONTAINS( "    \"object\": {", s.c_str() );
+    STRCMP_CONTAINS( "        \"bool\": true", s.c_str() );
+    STRCMP_CONTAINS( "        \"key\": \"value\"", s.c_str() );
+    STRCMP_CONTAINS( "        \"undef\": null", s.c_str() );
+    STRCMP_CONTAINS( "    },", s.c_str() );
+    STRCMP_CONTAINS( "    \"string\": \"test\"", s.c_str() );
+    STRCMP_CONTAINS( "}", s.c_str() );
+}
+
+TEST(JsonValidationGroup, SpecialCharactersTest)
+{
+    Value v( " \" \\ / \b \f \n \r \t " );
+    auto dump = Json::build( v, e );
+    CHECK( e.empty() );
+    STRCMP_EQUAL( "\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"", dump.c_str() );
+
+    v = Value( Value::Type::Object );
+    v.insert( "string", " \" \\ / \b \f \n \r \t " );
+
+    dump = Json::build( v, e );
+    STRCMP_EQUAL( "{\"string\":\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"}", dump.c_str() );
+
+    auto res = Json::parse( dump, e );
+    CHECK( e.empty() );
+    STRCMP_EQUAL( " \" \\ / \b \f \n \r \t ", res["string"].as_string().c_str() );
 }

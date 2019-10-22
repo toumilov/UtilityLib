@@ -54,18 +54,24 @@ public:
         copier_( nullptr )
     {}
     Variant( const Variant &v ) :
-        type_( invalid_type_ )
+        type_( invalid_type_ ),
+        destructor_( nullptr ),
+        copier_( nullptr )
     {
         clone( v );
     }
     Variant( Variant &v ) :
-        type_( invalid_type_ )
+        type_( invalid_type_ ),
+        destructor_( nullptr ),
+        copier_( nullptr )
     {
         clone( v );
     }
     template <class T>
     Variant( const T &value ) :
-        type_( invalid_type_ )
+        type_( invalid_type_ ),
+        destructor_( nullptr ),
+        copier_( nullptr )
     {
         build( value );
     }
