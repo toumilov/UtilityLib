@@ -13,6 +13,8 @@ set(sources
     Src/Serialization/Base64.cpp
     Inc/Serialization/Json.hpp
     Src/Serialization/Json.cpp
+    Inc/Serialization/Utf8.hpp
+    Src/Serialization/Utf8.cpp
     Inc/Error.hpp
     Src/Error.cpp
 )

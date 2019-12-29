@@ -10,6 +10,7 @@ set(sources Main.cpp
     Containers/ValueTest.cpp
     Serialization/Base64Test.cpp
     Serialization/JsonTest.cpp
+    Serialization/Utf8Test.cpp
     ErrorTest.cpp
 )
 
@@ -21,6 +22,7 @@ add_dependencies(${UNIT_TEST} UtilityLib)
 enable_testing()
 add_test(NAME Base64Group COMMAND ${UNIT_TEST} -g Base64Group)
 add_test(NAME JsonValidationGroup COMMAND ${UNIT_TEST} -g JsonValidationGroup)
+add_test(NAME Utf8ValidationGroup COMMAND ${UNIT_TEST} -g Utf8ValidationGroup)
 add_test(NAME ErrorGroup COMMAND ${UNIT_TEST} -g ErrorGroup)
 add_test(NAME VariantGroup COMMAND ${UNIT_TEST} -g VariantGroup)
 add_test(NAME ValueGroup COMMAND ${UNIT_TEST} -g ValueGroup)

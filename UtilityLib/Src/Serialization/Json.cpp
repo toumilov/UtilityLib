@@ -760,6 +760,16 @@ public:
         };
         return build_value( value, f, 0 );
     }
+
+    static std::string format( const std::string &json, Error &e, const Json::Format &formatter )
+    {
+        auto v = Json::parse( json, e );
+        if (!e.empty())
+        {
+            return "";
+        }
+        return build(v, e, formatter);
+    }
 };
 
 
@@ -789,9 +799,19 @@ std::string Json::build( const Value &value, Error &e )
     return JsonImpl::build( value, e, Json::Format() );
 }
 
-std::string Json::build( const Value &value, Error &e, const Json::Format formatter )
+std::string Json::build( const Value &value, Error &e, const Json::Format &formatter )
 {
     return JsonImpl::build( value, e, formatter );
+}
+
+std::string Json::format( const std::string &json, Error &e, const Format &formatter )
+{
+    return JsonImpl::format( json, e, formatter );
+}
+
+std::string Json::minimize( const std::string &json, Error &e)
+{
+    return JsonImpl::format( json, e, Format() );
 }
 
 } // namespace Serialization

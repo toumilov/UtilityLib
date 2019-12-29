@@ -76,7 +76,24 @@ public:
      * @param formatter Formatting information.
      * @return JSON string.
      */
-    static std::string build( const Containers::Value &value, Error &e, const Format formatter );
+    static std::string build( const Containers::Value &value, Error &e, const Format &formatter );
+
+    /**
+     * @brief format Format JSON string using specific formatting settings.
+     * @param json Unformatted JSON data in string form.
+     * @param e Result variable.
+     * @param formatter Formatting information.
+     * @return formatted JSON string.
+     */
+    static std::string format( const std::string &json, Error &e, const Format &formatter );
+
+    /**
+     * @brief minimize Minimize JSON string size keeping element names.
+     * @param json Unformatted JSON data in string form.
+     * @param e Result variable.
+     * @return minimized JSON string.
+     */
+    static std::string minimize( const std::string &json, Error &e);
 };
 
 } // namespace Serialization

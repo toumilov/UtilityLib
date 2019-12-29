@@ -332,6 +332,7 @@ TEST(JsonValidationGroup, ToStringTest)
               .insert( "test" );
 
     auto s = Json::build( v, e );
+    CHECK( e.empty() );
     STRCMP_CONTAINS( "{\"array\":[", s.c_str() );
     STRCMP_CONTAINS( "]", s.c_str() );
     STRCMP_CONTAINS( "\"float\":1.5", s.c_str() );
@@ -344,6 +345,7 @@ TEST(JsonValidationGroup, ToStringTest)
     STRCMP_CONTAINS( "\"string\":\"test\"", s.c_str() );
 
     s = Json::build( v, e, Json::Format( ' ', 4 ) );
+    CHECK( e.empty() );
     STRCMP_CONTAINS( "    \"array\": [", s.c_str() );
     STRCMP_CONTAINS( "        123", s.c_str() );
     STRCMP_CONTAINS( "        false", s.c_str() );
@@ -359,6 +361,10 @@ TEST(JsonValidationGroup, ToStringTest)
     STRCMP_CONTAINS( "    },", s.c_str() );
     STRCMP_CONTAINS( "    \"string\": \"test\"", s.c_str() );
     STRCMP_CONTAINS( "}", s.c_str() );
+
+    s = Json::minimize( s, e );
+    CHECK( e.empty() );
+    STRCMP_EQUAL( "{\"array\":[123,false,\"test\"],\"double\":1.79769e+308,\"float\":1.5,\"number\":123,\"object\":{\"bool\":true,\"key\":\"value\",\"undef\":null},\"string\":\"test\"}", s.c_str() );
 }
 
 TEST(JsonValidationGroup, SpecialCharactersTest)
