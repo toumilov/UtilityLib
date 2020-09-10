@@ -1,8 +1,9 @@
 
+#include <cstring>
 #include <cstdio>
 #include <stack>
 #include <utility>
-#include <regex>
+#include "errno.h"
 #include "Serialization/Json.hpp"
 
 
@@ -220,7 +221,10 @@ class JsonImpl
 
     static bool is_number( const std::string &token )
     {
-        return std::regex_match( token, std::regex( R"_(^[-]?(0|[1-9]\d*)(\.\d+)?((e|E)(\+|-)?\d+)?$)_" ) );
+        char *endptr = 0;
+        errno = 0;
+        auto ret __attribute__((unused)) = strtod( token.c_str(), &endptr );
+        return ( errno == 0 && endptr && ( *endptr == '\0' ) );
     }
 
     static bool is_string( const std::string &token )
@@ -333,7 +337,6 @@ class JsonImpl
     }
 
 public:
-
     static std::string escape_string( const std::string &s )
     {
         std::string res( s );
@@ -347,7 +350,6 @@ public:
         };
         replace_all( res, "\\", "\\\\" );
         replace_all( res, "\"", "\\\"" );
-        replace_all( res, "/", "\\/" );
         replace_all( res, "\b", "\\b" );
         replace_all( res, "\f", "\\f" );
         replace_all( res, "\n", "\\n" );
@@ -363,13 +365,12 @@ public:
             size_t start = 0;
             while( ( start = s.find( from, start ) ) != std::string::npos )
             {
-                     s.replace( start, strlen( from ), to );
-                     start += strlen( to );
+                s.replace( start, strlen( from ), to );
+                start += strlen( to );
             }
         };
         replace_all( res, "\\\\", "\\" );
         replace_all( res, "\\\"", "\"" );
-        replace_all( res, "\\/", "/" );
         replace_all( res, "\\b", "\b" );
         replace_all( res, "\\f", "\f" );
         replace_all( res, "\\n", "\n" );
@@ -380,9 +381,25 @@ public:
 
     static bool validate( const std::string &json, Error &e )
     {
+        parse( json, nullptr, e );
+        return e.empty();
+    }
+
+    static Value parse( const std::string &json, Error &e )
+    {
+        Value v;
+        parse( json, &v, e );
+        return v;
+    }
+
+    static void parse( const std::string &json, Value *v, Error &e )
+    {
+        std::string key;
+        std::stack<Levels> levels;
+        std::stack<Value*> values;
+
         auto tokenizer = JsonTokenizer( json );
         State state = State::Value;
-        std::stack<Levels> levels;
         std::string token;
         while(true)
         {
@@ -391,50 +408,164 @@ public:
             {
                 if ( !e.empty() )
                 {
-                    return false;
+                    if ( v ) { *v = Value(); }
+                    return;
                 }
                 if ( !levels.empty() )
                 {
                     auto pos = tokenizer.get_last_token_position();
                     e = Error( Json::Result::UnexpectedEnding, "Unexpected ending (%d:%d)", pos.first, pos.second );
-                    return false;
+                    if ( v ) { *v = Value(); }
+                    return;
                 }
                 break;
             }
             switch( state )
             {
             case State::Value:
-                if ( is_lexeme( token ) || is_number( token ) || is_string( token ) )
+                if ( is_string( token ) )
                 {
-                    state = levels.empty() ? State::End : State::ValueSeparator;
+                    if ( levels.empty() )
+                    {
+                        state = State::End;
+                        if ( v ) { *v = build_string( token ); }
+                    }
+                    else
+                    {
+                        state = State::ValueSeparator;
+                        if ( levels.top() == Levels::Object )
+                        {
+                            if ( v ) { values.top()->insert( key, Value( build_string( token ) ) ); }
+                        }
+                        else if ( v )
+                        {
+                            values.top()->insert( Value( build_string( token ) ) );
+                        }
+                    }
+                    continue;
+                }
+                if ( is_lexeme( token ) )
+                {
+                    if ( levels.empty() )
+                    {
+                        state = State::End;
+                        if ( v ) { *v = build_lexeme( token ); }
+                    }
+                    else
+                    {
+                        state = State::ValueSeparator;
+                        if ( levels.top() == Levels::Object )
+                        {
+                            if ( v ) { values.top()->insert( key, build_lexeme( token ) ); }
+                        }
+                        else if ( v )
+                        {
+                            values.top()->insert( build_lexeme( token ) );
+                        }
+                    }
+                    continue;
+                }
+                if ( is_number( token ) )
+                {
+                    if ( levels.empty() )
+                    {
+                        state = State::End;
+                        if ( v ) { *v = build_number( token, e ); }
+                    }
+                    else
+                    {
+                        state = State::ValueSeparator;
+                        if ( levels.top() == Levels::Object )
+                        {
+                            if ( v ) { values.top()->insert( key, build_number( token, e ) ); }
+                        }
+                        else if ( v )
+                        {
+                            values.top()->insert( build_number( token, e ) );
+                        }
+                    }
+                    if ( !e.empty() )
+                    {
+                        auto pos = tokenizer.get_last_token_position();
+                        e = Error( Json::Result::BadValue, "Bad value (%d:%d)", pos.first, pos.second );
+                        if ( v ) { *v = Value(); }
+                        return;
+                    }
                     continue;
                 }
                 else if ( token == "{" )
                 {
                     state = State::Key;
+                    if ( levels.empty() )
+                    {
+                        if ( v )
+                        {
+                            *v = Value( Value::Type::Object );
+                            values.push( v );
+                        }
+                    }
+                    else if ( levels.top() == Levels::Array && v )
+                    {
+                        values.top()->insert( Value( Value::Type::Object ) );
+                        values.push( &values.top()->back() );
+                    }
+                    else if ( v )
+                    {
+                        values.top()->insert( key, Value( Value::Type::Object ) );
+                        values.push( &values.top()->at( key ) );
+                    }
                     levels.push( Levels::Object );
                     continue;
                 }
                 else if ( token == "[" )
                 {
+                    if ( levels.empty() )
+                    {
+                        if ( v )
+                        {
+                            *v = Value( Value::Type::Array );
+                            values.push( v );
+                        }
+                    }
+                    else if ( levels.top() == Levels::Array && v )
+                    {
+                        values.top()->insert( Value( Value::Type::Object ) );
+                        values.push( &values.top()->back() );
+                    }
+                    else if ( v )
+                    {
+                        values.top()->insert( key, Value( Value::Type::Array ) );
+                        values.push( &values.top()->at( key ) );
+                    }
                     levels.push( Levels::Array );
                     continue;
                 }
                 else if ( token == "]" && !levels.empty() && levels.top() == Levels::Array )
                 {
                     levels.pop();
+                    if ( v ) { values.pop(); }
+                    state = levels.empty() ? State::End : State::ValueSeparator;
                     continue;
                 }
                 break;
             case State::Key:
                 if ( is_string( token ) )
                 {
+                    key = build_string( token );
+                    if ( key.empty() )
+                    {
+                        auto pos = tokenizer.get_last_token_position();
+                        e = Error( Json::Result::BadKey, "Empty key (%d:%d)", pos.first, pos.second );
+                        if ( v ) { *v = Value(); }
+                        return;
+                    }
                     state = State::KeyValueSeparator;
                     continue;
                 }
                 else if ( token == "}" && !levels.empty() && levels.top() == Levels::Object )
                 {
                     levels.pop();
+                    if ( v ) { values.pop(); }
                     state = State::ValueSeparator;
                     continue;
                 }
@@ -454,10 +585,16 @@ public:
                         state = levels.top() == Levels::Array ? State::Value : State::Key;
                         continue;
                     }
-                    else if ( ( token == "}" && levels.top() == Levels::Object ) ||
-                              ( token == "]" && levels.top() == Levels::Array ) )
+                    else if ( token == "}" && levels.top() == Levels::Object )
                     {
                         levels.pop();
+                        if ( v ) { values.pop(); }
+                        continue;
+                    }
+                    else if ( token == "]" && levels.top() == Levels::Array )
+                    {
+                        levels.pop();
+                        if ( v ) { values.pop(); }
                         continue;
                     }
                 }
@@ -467,205 +604,16 @@ public:
                 {
                     auto pos = tokenizer.get_last_token_position();
                     e = Error( Json::Result::UnexpectedEnding, "Unexpected ending (%d:%d)", pos.first, pos.second );
-                    return false;
+                    if ( v ) { *v = Value(); }
+                    return;
                 }
                 continue;
             }
             auto pos = tokenizer.get_last_token_position();
             e = Error( Json::Result::UnexpectedToken, "Unexpected token (%d:%d)", pos.first, pos.second );
-            return false;
+            if ( v ) { *v = Value(); }
+            return;
         }
-        return true;
-    }
-
-    static Value parse( const std::string &json, Error &e )
-    {
-        Value v;
-        std::string key;
-        std::stack<Value*> levels;
-
-        auto tokenizer = JsonTokenizer( json );
-        State state = State::Value;
-        std::string token;
-        while(true)
-        {
-            token = tokenizer.get_token( e );
-            if ( token.empty() )
-            {
-                if ( !e.empty() )
-                {
-                    return Value();
-                }
-                if ( !levels.empty() )
-                {
-                    auto pos = tokenizer.get_last_token_position();
-                    e = Error( Json::Result::UnexpectedEnding, "Unexpected ending (%d:%d)", pos.first, pos.second );
-                    return Value();
-                }
-                break;
-            }
-            switch( state )
-            {
-            case State::Value:
-                if ( is_string( token ) )
-                {
-                    if ( levels.empty() )
-                    {
-                        state = State::End;
-                        v = build_string( token );
-                    }
-                    else
-                    {
-                        state = State::ValueSeparator;
-                        if ( levels.top()->type() == Value::Type::Object )
-                        {
-                            levels.top()->insert( key, Value( build_string( token ) ) );
-                        }
-                        else
-                        {
-                            levels.top()->insert( Value( build_string( token ) ) );
-                        }
-                    }
-                    continue;
-                }
-                if ( is_lexeme( token ) )
-                {
-                    if ( levels.empty() )
-                    {
-                        state = State::End;
-                        v = build_lexeme( token );
-                    }
-                    else
-                    {
-                        state = State::ValueSeparator;
-                        if ( levels.top()->type() == Value::Type::Object )
-                        {
-                            levels.top()->insert( key, build_lexeme( token ) );
-                        }
-                        else
-                        {
-                            levels.top()->insert( build_lexeme( token ) );
-                        }
-                    }
-                    continue;
-                }
-                if ( is_number( token ) )
-                {
-                    if ( levels.empty() )
-                    {
-                        state = State::End;
-                        v = build_number( token, e );
-                    }
-                    else
-                    {
-                        state = State::ValueSeparator;
-                        if ( levels.top()->type() == Value::Type::Object )
-                        {
-                            levels.top()->insert( key, build_number( token, e ) );
-                        }
-                        else
-                        {
-                            levels.top()->insert( build_number( token, e ) );
-                        }
-                    }
-                    if ( !e.empty() )
-                    {
-                        auto pos = tokenizer.get_last_token_position();
-                        e = Error( Json::Result::BadValue, "Bad value (%d:%d)", pos.first, pos.second );
-                        return Value();
-                    }
-                    continue;
-                }
-                else if ( token == "{" )
-                {
-                    state = State::Key;
-                    if ( levels.empty() )
-                    {
-                        v = Value( Value::Type::Object );
-                        levels.push( &v );
-                    }
-                    else
-                    {
-                        levels.top()->insert( key, Value( Value::Type::Object ) );
-                        levels.push( &levels.top()->at( key ) );
-                    }
-                    continue;
-                }
-                else if ( token == "[" )
-                {
-                    if ( levels.empty() )
-                    {
-                        v = Value( Value::Type::Array );
-                        levels.push( &v );
-                    }
-                    else
-                    {
-                        levels.top()->insert( key, Value( Value::Type::Array ) );
-                        levels.push( &levels.top()->at( key ) );
-                    }
-                    continue;
-                }
-                else if ( token == "]" && !levels.empty() && levels.top()->type() == Value::Type::Array )
-                {
-                    levels.pop();
-                    continue;
-                }
-                break;
-            case State::Key:
-                if ( is_string( token ) )
-                {
-                    key = build_string( token );
-                    state = State::KeyValueSeparator;
-                    continue;
-                }
-                else if ( token == "}" && !levels.empty() && levels.top()->type() == Value::Type::Object )
-                {
-                    levels.pop();
-                    state = State::ValueSeparator;
-                    continue;
-                }
-                break;
-            case State::KeyValueSeparator:
-                if ( token == ":" )
-                {
-                    state = State::Value;
-                    continue;
-                }
-                break;
-            case State::ValueSeparator:
-                if ( !levels.empty() )
-                {
-                    if ( token == "," )
-                    {
-                        state = levels.top()->type() == Value::Type::Array ? State::Value : State::Key;
-                        continue;
-                    }
-                    else if ( token == "}" && levels.top()->type() == Value::Type::Object )
-                    {
-                        levels.pop();
-                        continue;
-                    }
-                    else if ( token == "]" && levels.top()->type() == Value::Type::Array )
-                    {
-                        levels.pop();
-                        continue;
-                    }
-                }
-                break;
-            case State::End:
-                if ( !token.empty() )
-                {
-                    auto pos = tokenizer.get_last_token_position();
-                    e = Error( Json::Result::UnexpectedEnding, "Unexpected ending (%d:%d)", pos.first, pos.second );
-                    return Value();
-                }
-                continue;
-            }
-            auto pos = tokenizer.get_last_token_position();
-            e = Error( Json::Result::UnexpectedToken, "Unexpected token (%d:%d)", pos.first, pos.second );
-            return Value();
-        }
-        return v;
     }
 
     static std::string build( const Value &value, Error &e, const Json::Format &f )

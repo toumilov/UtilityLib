@@ -27,9 +27,9 @@ add_test(NAME ErrorGroup COMMAND ${UNIT_TEST} -g ErrorGroup)
 add_test(NAME VariantGroup COMMAND ${UNIT_TEST} -g VariantGroup)
 add_test(NAME ValueGroup COMMAND ${UNIT_TEST} -g ValueGroup)
 
-#add_custom_command(
-#    TARGET ${UNIT_TEST}
-#    COMMENT "Runing unit tests"
-#    POST_BUILD 
-#    COMMAND ctest -C $<CONFIGURATION> --output-on-failure
-#)
+add_custom_command(
+    TARGET ${UNIT_TEST}
+    COMMENT "Running unit tests"
+    POST_BUILD
+    COMMAND ctest -C $<CONFIGURATION> --output-on-failure
+)

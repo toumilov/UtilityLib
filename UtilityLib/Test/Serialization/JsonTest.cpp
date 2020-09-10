@@ -138,7 +138,7 @@ TEST(JsonValidationGroup, NumberTest)
         "-5E5", "-6E6", "-7E7", "-8E8", "-9E9", "-10E+2", "-123E-45", "-11E11", "-22E22",
         "-33E33", "-44E44", "-55E55", "-66E66", "-77E77", "-88E88", "-99E99"
     };
-    std::string invalid_numbers[] = { "-", "00", "01", "0-", "-00", "-012", "-e0", "-E0", "-E12", "e2E4", "e+", "E+", "0e+", "0E+" };
+    std::string invalid_numbers[] = { "-", "0-", "-e0", "-E0", "-E12", "e2E4", "e+", "E+", "0e+", "0E+" };
 
     for( const auto &i : valid_numbers )
     {
@@ -238,7 +238,8 @@ TEST(JsonValidationGroup, ParseCombinedTest)
         false,
         "text"
     ],
-    "double": 1.5
+    "double": 1.5,
+    "empty_array": [{}]
 })_";
     auto v = Json::parse( str, e );
     CHECK( e.empty() );
@@ -252,7 +253,10 @@ TEST(JsonValidationGroup, ParseCombinedTest)
     DOUBLES_EQUAL( 0.1, v["array"][0].as_float(), std::numeric_limits<float>::epsilon() );
     CHECK_FALSE( v["array"][1].as_bool() );
     STRCMP_EQUAL( "text", v["array"][2].as_string().c_str() );
+    STRCMP_EQUAL( "text", v["array"].back().as_string().c_str() );
     DOUBLES_EQUAL( 1.5, v["double"].as_double(), std::numeric_limits<double>::epsilon() );
+    CHECK_EQUAL( 1, v["empty_array"].size() );
+    CHECK( Value::Type::Object == v["empty_array"][0].type() );
 
     STRCMP_EQUAL( "null", v["bad_key"].as_string().c_str() );
 }
@@ -303,13 +307,29 @@ TEST(JsonValidationGroup, ParseStringTest)
     STRCMP_EQUAL( "str", v.as_string().c_str() );
 }
 
+TEST(JsonValidationGroup, ParseMiscTest)
+{
+    auto v = Json::parse( "{\"a\": [], \"b\":{},\"c\":null}", e );
+    CHECK( e.empty() );
+
+    v = Json::parse( "{}", e );
+    CHECK( e.empty() );
+
+    v = Json::parse( "[]", e );
+    CHECK( e.empty() );
+
+    v = Json::parse( "{\"\":1}", e );
+    CHECK_FALSE( e.empty() );
+    CHECK_EQUAL( Json::Result::BadKey, e.code() );
+}
+
 TEST(JsonValidationGroup, InvalidInputTest)
 {
-    std::string scenarios[] = { "123 {}", "123{}", "123 true", "true {}", "tru", "{", "}", "[", "]" };
+    std::string scenarios[] = { "123 {}", "123{}", "123 true", "true {}", "tru", "{", "}", "[", "]", "{\"\":1}" };
     for( const auto &i : scenarios )
     {
-        CHECK_FALSE( Json::validate( i, e ) );
-        CHECK( !e.empty() );
+        CHECK_FALSE_TEXT( Json::validate( i, e ), i.c_str() );
+        CHECK_TEXT( !e.empty(), i.c_str() );
         e.clear();
     }
 }
@@ -369,18 +389,18 @@ TEST(JsonValidationGroup, ToStringTest)
 
 TEST(JsonValidationGroup, SpecialCharactersTest)
 {
-    Value v( " \" \\ / \b \f \n \r \t " );
+    Value v( " \" \\ \b \f \n \r \t " );
     auto dump = Json::build( v, e );
     CHECK( e.empty() );
-    STRCMP_EQUAL( "\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"", dump.c_str() );
+    STRCMP_EQUAL( "\" \\\" \\\\ \\b \\f \\n \\r \\t \"", dump.c_str() );
 
     v = Value( Value::Type::Object );
-    v.insert( "string", " \" \\ / \b \f \n \r \t " );
+    v.insert( "string", " \" \\ \b \f \n \r \t " );
 
     dump = Json::build( v, e );
-    STRCMP_EQUAL( "{\"string\":\" \\\" \\\\ \\/ \\b \\f \\n \\r \\t \"}", dump.c_str() );
+    STRCMP_EQUAL( "{\"string\":\" \\\" \\\\ \\b \\f \\n \\r \\t \"}", dump.c_str() );
 
     auto res = Json::parse( dump, e );
     CHECK( e.empty() );
-    STRCMP_EQUAL( " \" \\ / \b \f \n \r \t ", res["string"].as_string().c_str() );
+    STRCMP_EQUAL( " \" \\ \b \f \n \r \t ", res["string"].as_string().c_str() );
 }

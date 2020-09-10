@@ -23,6 +23,7 @@ public:
             UnexpectedCharacter = 1,
             UnexpectedEnding,
             UnexpectedToken,
+            BadKey,
             BadValue
         };
     };
@@ -31,8 +32,8 @@ public:
      */
     struct Format
     {
-        char indent_char = ' ';
-        unsigned indent_size  = 0;
+        char indent_char;
+        unsigned indent_size;
 
         Format() :
             indent_char( ' ' ),

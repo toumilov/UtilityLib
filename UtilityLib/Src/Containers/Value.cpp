@@ -73,6 +73,26 @@ Value::Value( const char *s )
     data_ = String( s );
 }
 
+void Value::swap( Value &rhs )
+{
+    auto t = type_;
+    auto d = std::move( data_ );
+    type_ = rhs.type_;
+    data_ = rhs.data_;
+    rhs.type_ = t;
+    rhs.data_ = std::move( d );
+}
+
+void Value::swap( Value &&rhs )
+{
+    auto t = type_;
+    auto d = std::move( data_ );
+    type_ = rhs.type_;
+    data_ = rhs.data_;
+    rhs.type_ = t;
+    rhs.data_ = std::move( d );
+}
+
 Value& Value::operator=( const char *value )
 {
     return operator=( String( value ) );
@@ -149,7 +169,17 @@ bool Value::operator==( const Value &value ) const
     return visitor.res;
 }
 
+Value::operator bool() const
+{
+    return !empty();
+}
+
 Value& Value::operator[]( unsigned index )
+{
+    return at( index );
+}
+
+Value& Value::operator[]( int index )
 {
     return at( index );
 }
@@ -165,12 +195,59 @@ Value& Value::at( unsigned index )
     return arr.at( index );
 }
 
+Value& Value::at( int index )
+{
+    auto &arr = get<Array>();
+    if ( type_ != Type::Array || arr.size() <= (size_t)index )
+    {
+        none.clear();
+        return none;
+    }
+    return arr.at( (size_t)index );
+}
+
+Value& Value::back()
+{
+    auto &arr = get<Array>();
+    if ( type_ != Type::Array || arr.size() == 0 )
+    {
+        none.clear();
+        return none;
+    }
+    return arr.at( arr.size() - 1 );
+}
+
 Value& Value::operator[]( const std::string &key )
 {
     return at( key );
 }
 
+const Value& Value::operator[]( const std::string &key ) const
+{
+    return at( key );
+}
+
+Value& Value::operator[]( const char *key )
+{
+    return at( key );
+}
+
+const Value& Value::operator[]( const char *key ) const
+{
+    return at( key );
+}
+
 Value& Value::at( const std::string &key )
+{
+    if ( type_ != Type::Object )
+    {
+        swap( Value( Type::Object ) );
+    }
+    auto &o = get<Object>();
+    return o[key];
+}
+
+const Value& Value::at( const std::string &key ) const
 {
     auto &o = get<Object>();
     if ( type_ != Type::Object || o.find( key ) == o.end() )
@@ -181,12 +258,21 @@ Value& Value::at( const std::string &key )
     return o.at( key );
 }
 
+Value& Value::at( const char *key )
+{
+    return at( std::string( key ) );
+}
+
+const Value& Value::at( const char *key ) const
+{
+    return at( std::string( key ) );
+}
+
 Value& Value::insert( Value &&v )
 {
     if ( type_ != Type::Array )
     {
-        none.clear();
-        return none;
+        swap( Value( Type::Array ) );
     }
     get<Array>().push_back( std::move( v ) );
     return *this;
@@ -208,8 +294,7 @@ Value& Value::insert( const std::string &key, Value &&v )
 {
     if ( type_ != Type::Object )
     {
-        none.clear();
-        return none;
+        swap( Value( Type::Object ) );
     }
     get<Object>().insert( std::pair<std::string, Value>( key, std::move( v ) ) );
     return *this;
@@ -252,6 +337,24 @@ Value::Type Value::type() const
 bool Value::has( unsigned index ) const
 {
     return type_ == Type::Array && index < get<Value::Array>().size();
+}
+
+bool Value::find( ElementPredicate pred, unsigned &index ) const
+{
+    bool res = false;
+    if ( type_ == Type::Array )
+    {
+        auto items = get<Value::Array>();
+        for( index = 0; index < items.size(); index++ )
+        {
+            if ( pred( items[index] ) )
+            {
+                res = true;
+                break;
+            }
+        }
+    }
+    return res;
 }
 
 bool Value::has( const std::string &key ) const
@@ -376,7 +479,7 @@ Value Value::as( Type t ) const
             {
                 char buf[12];
                 snprintf( buf, sizeof( buf ), "%d", *data_.get<Int32>() );
-                v = buf;
+                v = std::string( buf );
                 break;
             }
             case Value::Type::Array:  break;
@@ -401,7 +504,7 @@ Value Value::as( Type t ) const
             {
                 char buf[21];
                 snprintf( buf, sizeof( buf ), "%lld", *data_.get<Int64>() );
-                v = buf;
+                v = std::string( buf );
                 break;
             }
             case Value::Type::Array:  break;
@@ -426,7 +529,7 @@ Value Value::as( Type t ) const
             {
                 char buf[12];
                 snprintf( buf, sizeof( buf ), "%u", *data_.get<Uint32>() );
-                v = buf;
+                v = std::string( buf );
                 break;
             }
             case Value::Type::Array:  break;
@@ -451,7 +554,7 @@ Value Value::as( Type t ) const
             {
                 char buf[21];
                 snprintf( buf, sizeof( buf ), "%llu", *data_.get<Uint64>() );
-                v = buf;
+                v = std::string( buf );
                 break;
             }
             case Value::Type::Array:  break;
@@ -476,7 +579,7 @@ Value Value::as( Type t ) const
             {
                 char buf[50];
                 snprintf( buf, sizeof( buf ), "%g", *data_.get<Float>() );
-                v = buf;
+                v = std::string( buf );
                 break;
             }
             case Value::Type::Array:  break;
@@ -501,7 +604,7 @@ Value Value::as( Type t ) const
             {
                 char buf[320];
                 snprintf( buf, sizeof( buf ), "%g", *data_.get<Double>() );
-                v = buf;
+                v = std::string( buf );
                 break;
             }
             case Value::Type::Array:  break;
@@ -782,7 +885,7 @@ bool Value::is_convertable( const Value::Type t ) const
             auto s = get<String>();
             char* end_ptr = nullptr;
             errno = 0;
-            strtol( s.c_str(), &end_ptr, 10 );
+            auto ret __attribute__((unused)) = strtol( s.c_str(), &end_ptr, 10 );
             return ( errno == 0 && end_ptr == ( s.data() + s.length() ) );
         }
         case Value::Type::Int64:
@@ -790,7 +893,7 @@ bool Value::is_convertable( const Value::Type t ) const
             auto s = get<String>();
             char* end_ptr = nullptr;
             errno = 0;
-            strtoll( s.c_str(), &end_ptr, 10 );
+            auto ret __attribute__((unused)) = strtoll( s.c_str(), &end_ptr, 10 );
             return ( errno == 0 && end_ptr == ( s.data() + s.length() ) );
         }
         case Value::Type::Uint32:
@@ -799,7 +902,7 @@ bool Value::is_convertable( const Value::Type t ) const
             if ( s[0] == '-' ) return false;
             char* end_ptr = nullptr;
             errno = 0;
-            strtoul( s.c_str(), &end_ptr, 10 );
+            auto ret __attribute__((unused)) = strtoul( s.c_str(), &end_ptr, 10 );
             return ( errno == 0 && end_ptr == ( (char*)s.data() + s.length() ) );
         }
         case Value::Type::Uint64:
@@ -808,7 +911,7 @@ bool Value::is_convertable( const Value::Type t ) const
             if ( s[0] == '-' ) return false;
             char* end_ptr = nullptr;
             errno = 0;
-            strtoull( s.c_str(), &end_ptr, 10 );
+            auto ret __attribute__((unused)) = strtoull( s.c_str(), &end_ptr, 10 );
             return ( errno == 0 && end_ptr == ( s.data() + s.length() ) );
         }
         case Value::Type::Float:
@@ -816,7 +919,7 @@ bool Value::is_convertable( const Value::Type t ) const
             auto s = get<String>();
             char* end_ptr = nullptr;
             errno = 0;
-            strtof( s.c_str(), &end_ptr );
+            auto ret __attribute__((unused)) = strtof( s.c_str(), &end_ptr );
             return ( errno == 0 && end_ptr == ( s.data() + s.length() ) );
         }
         case Value::Type::Double:
@@ -824,7 +927,7 @@ bool Value::is_convertable( const Value::Type t ) const
             auto s = get<String>();
             char* end_ptr = nullptr;
             errno = 0;
-            strtod( s.c_str(), &end_ptr );
+            auto ret __attribute__((unused)) = strtod( s.c_str(), &end_ptr );
             return ( errno == 0 && end_ptr == ( s.data() + s.length() ) );
         }
         case Value::Type::String: return true;
@@ -866,6 +969,35 @@ bool Value::is_convertable( const Value::Type t ) const
         break;
     }
     return false;
+}
+
+bool operator<( const Value::Type lhs, const Value::Type rhs )
+{
+    return (unsigned)lhs < (unsigned)rhs;
+}
+
+std::string to_string( Value::Type type )
+{
+    static const std::map<Value::Type, const std::string> mapping =
+    {
+        { Value::Type::None,   "null"   },
+        { Value::Type::Bool,   "bool"   },
+        { Value::Type::Int32,  "int32"  },
+        { Value::Type::Int64,  "int64"  },
+        { Value::Type::Uint32, "uint32" },
+        { Value::Type::Uint64, "uint64" },
+        { Value::Type::Float,  "float"  },
+        { Value::Type::Double, "double" },
+        { Value::Type::String, "string" },
+        { Value::Type::Array,  "array"  },
+        { Value::Type::Object, "object" }
+    };
+    auto i = mapping.find( type );
+    if ( i != mapping.end() )
+    {
+        return i->second;
+    }
+    return std::string( mapping.at( Value::Type::None ) );
 }
 
 } // namespace Containers

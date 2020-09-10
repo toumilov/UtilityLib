@@ -19,6 +19,17 @@ TEST_GROUP(ValueGroup)
     }
 };
 
+TEST(ValueGroup, SwapTest)
+{
+    Value a( 123 );
+    Value b( "test" );
+    a.swap( b );
+    UNSIGNED_LONGS_EQUAL( Value::Type::Int32, b.type() );
+    UNSIGNED_LONGS_EQUAL( Value::Type::String, a.type() );
+    CHECK( b == 123 );
+    STRCMP_EQUAL( "test", a.get<Value::String>().c_str() );
+}
+
 TEST(ValueGroup, NoneTest)
 {
     Value v;
@@ -260,6 +271,30 @@ TEST(ValueGroup, ArrayTest)
     CHECK( "test" == v.at( 1 ) );
     CHECK( v.at( 2 ).empty() );
 
+    Value a;
+    a.insert( 123 )
+     .insert( "test" );
+    CHECK_EQUAL( 2, a.size() );
+    CHECK( a.has( 0 ) );
+    CHECK( a.has( 1 ) );
+    CHECK_FALSE( a.has( 2 ) );
+    CHECK( 123 == a[0] );
+    CHECK( "test" == a.at( 1 ) );
+    CHECK( a.at( 2 ).empty() );
+
+    // Find element
+    Value o( Value::Type::Object );
+    o.insert( "user", "usr1" );
+    o.insert( "type", 2 );
+    a.insert( std::move( o ) );
+    auto pred = []( const std::string &user, const Value &o ) -> bool {
+        return o.has( "user" ) && o["user"].get<Value::String>() == user;
+    };
+    unsigned i;
+    CHECK( a.find( std::bind( pred, "usr1", std::placeholders::_1 ), i ) );
+    CHECK_EQUAL( 2, i );
+    CHECK_FALSE( a.find( std::bind( pred, "usr2", std::placeholders::_1 ), i ) );
+
     // Size
     CHECK_EQUAL( 2, v.size() );
 
@@ -293,7 +328,17 @@ TEST(ValueGroup, ObjectTest)
     CHECK_FALSE( v.has( "key3" ) );
     CHECK( 123 == v["key1"] );
     CHECK( "test" == v.at( "key2" ) );
-    CHECK( v.at( "key3" ).empty() );
+    CHECK_FALSE( v.has( "key3" ) );
+
+    Value o;
+    o["key1"] = 123;
+    o.at( "key2" ) = "test";
+    CHECK( o.has( "key1" ) );
+    CHECK( o.has( "key2" ) );
+    CHECK_FALSE( o.has( "key3" ) );
+    CHECK( 123 == o["key1"] );
+    CHECK( "test" == o.at( "key2" ) );
+    CHECK_FALSE( o.has( "key3" ) );
 
     // Size
     CHECK_EQUAL( 2, v.size() );
@@ -751,7 +796,7 @@ TEST(ValueGroup, AsType)
     auto s = bool_value.as( Value::Type::String );
     CHECK( s.is( Value::Type::String ) );
     STRCMP_EQUAL( "true", s.get<Value::String>().c_str() );
-    CHECK_EQUAL( "true", bool_value.as_string() );
+    STRCMP_EQUAL( "true", bool_value.as_string().c_str() );
     // Bool -> Array
     CHECK( bool_value.as( Value::Type::Array ).is( Value::Type::Array ) );
     CHECK( bool_value.as_array().empty() );

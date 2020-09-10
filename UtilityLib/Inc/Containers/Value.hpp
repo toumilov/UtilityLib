@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <vector>
 #include <string>
 #include <map>
@@ -51,6 +52,8 @@ public:
     typedef std::vector<Value> Array;
     typedef std::map<std::string, Value> Object;
 
+    typedef std::function<bool(const Value &element)> ElementPredicate;
+
     /**
      * @brief Value visitor prototype.
      */
@@ -82,6 +85,9 @@ public:
         data_ = value;
         type_ = type();
     }
+
+    void swap( Value &rhs );
+    void swap( Value &&rhs );
 
     /**
      * @brief Assignment operators
@@ -135,12 +141,15 @@ public:
         return !( *this == value );
     }
 
+    operator bool() const;
+
     /**
      * @brief Returns an element by specified index or Null object if no such element.
      * @param index Element index.
      * @return Object reference.
      */
     Value& operator[]( unsigned index );
+    Value& operator[]( int index );
 
     /**
      * at Returns an element by specified index or Null object if no such element.
@@ -148,6 +157,13 @@ public:
      * @return Object reference.
      */
     Value& at( unsigned index );
+    Value& at( int index );
+
+    /**
+     * back Returns last element of array or Null if empty.
+     * @return Object reference.
+     */
+    Value& back();
 
     /**
      * insert Adds a new element into array.
@@ -169,6 +185,9 @@ public:
      * @return Object reference.
      */
     Value& operator[]( const std::string &key );
+    const Value& operator[]( const std::string &key ) const;
+    Value& operator[]( const char *key );
+    const Value& operator[]( const char *key ) const;
 
     /**
      * at Returns an element by key or Null object if no such element.
@@ -176,6 +195,9 @@ public:
      * @return Object reference.
      */
     Value& at( const std::string &key );
+    const Value& at( const std::string &key ) const;
+    Value& at( const char *key );
+    const Value& at( const char *key ) const;
 
     /**
      * insert Adds a new element into object.
@@ -210,7 +232,7 @@ public:
                                       std::is_same<T, Object>::value>::type* = nullptr>
     bool is() const
     {
-        const T* ptr;
+        const T* ptr = nullptr;
         return type( ptr ) == type_;
     }
 
@@ -326,6 +348,12 @@ public:
      * @return True if index exists.
      */
     bool has( unsigned index ) const;
+
+    /**
+     * index Checks if element exists in array using specified predicate
+     * @return True if element exists.
+     */
+    bool find( ElementPredicate pred, unsigned &index ) const;
 
     /**
      * has Checks if key exists in array.
@@ -444,6 +472,10 @@ bool operator==( const T &lhs, const Value &rhs )
 {
     return rhs.operator==( lhs );
 }
+
+bool operator<( const Value::Type lhs, const Value::Type rhs );
+
+std::string to_string( Value::Type type );
 
 } // namespace Containers
 } // namespace UtilityLib
